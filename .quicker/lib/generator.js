@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import render from './renderer.js'
 
 const __root = path.resolve()
 const pagesPath = path.join(__root, 'pages')
@@ -20,10 +21,13 @@ for (const pageFile of pageFiles) {
     }
   }
 
+  const pageDataRaw = data.page()
+  const htmlString = render(pageDataRaw)
+
   const genRoutePath = path.join(__root, `.quicker/routes/auto/${data.path}.js`)
   const rootTemplatePath = path.join(__root, '.quicker/template.html')
   let templateContent = fs.readFileSync(rootTemplatePath, { encoding: 'utf-8' })
-  templateContent = templateContent.replace('{{INSERT}}', data.page())
+  templateContent = templateContent.replace('{{INSERT}}', htmlString)
 
   const routeTemplateString = `
 export default async function ${data.path}(fastify, options) {
