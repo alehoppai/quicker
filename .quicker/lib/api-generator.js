@@ -18,7 +18,7 @@ export async function ${method.toLowerCase()}_${name.toLowerCase()} (${
   const response = await fetch(\`${config.apiUrl}/${endpoint.path}${
         param[1] ? genericParam : ''
       }\`, {
-    method: param[0],
+    method: "${param[0]}",
     headers: { 'Content-Type': 'application/json' },
   })
   
