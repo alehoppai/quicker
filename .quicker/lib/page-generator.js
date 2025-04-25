@@ -1,47 +1,37 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import render from './renderer.js'
-import pageTemplate from '../templates/page-template.js'
-import { config } from '../../quicker.config.js'
 
 const __root = path.resolve()
 
-export default async function () {
+export default async function() {
   const pagesPath = path.join(__root, 'pages')
 
   const pageFiles = fs.readdirSync(pagesPath, { recursive: true })
 
   for (const pageFile of pageFiles) {
-    const filePath = path.join(pagesPath, pageFile)
-    const data = (await import(filePath)).default
-
-    if (data.preload) {
-      if (typeof data.preload === 'function') {
-        console.info(filePath, 'preload parsed...')
-      } else {
-        throw new Error(
-          `[${filePath}] export contains preload, but it's not a function`
-        )
-      }
-    }
-
-    const pageDataRaw = data.page()
-    const pgeDataString = render(pageDataRaw)
-
-    const genRoutePath = path.join(
-      __root,
-      `.quicker/routes/auto/${data.path}.js`
-    )
-    const htmlString = pageTemplate({ title: data.title, data: pgeDataString })
-
+    const pageModule = (await import(path.join(pagesPath, pageFile))).default
     const routeTemplateString = `
-export default async function ${data.path}(fastify, options) {
-  fastify.get('/${data.path}', async (request, reply) => {
-    reply.type('text/html').send(\`${htmlString}\`)
+import * as ${pageModule.path}Api from '${path.join(__root, `.quicker/api/auto/${pageModule.path}.js`)}'
+import render from '${path.join(__root, '.quicker/lib/renderer.js')}'
+import pageTemplate from '${path.join(__root, '.quicker/templates/page-template.js')}'
+import page from '${path.join(pagesPath, pageFile)}'
+
+export default async function ${pageModule.path}(fastify, options) {
+  fastify.get('/${pageModule.path}', async (request, reply) => {
+    try {
+      const posts = await ${pageModule.path}Api.get_${pageModule.path}()
+      reply.type('text/html').send(pageTemplate({title: '', data: render(page.page({ posts }))}))
+    } catch {
+      reply.code(500).send("500 Internal server error")
+    }
   })
 }
   `
 
+    const genRoutePath = path.join(
+      __root,
+      `.quicker/routes/auto/${pageModule.path}.js`
+    )
     fs.writeFileSync(genRoutePath, routeTemplateString)
   }
 }

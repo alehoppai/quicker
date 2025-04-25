@@ -1,2 +1,3 @@
 node_modules
-.quicker/**/auto
+.quicker/routes/auto
+.quicker/api/auto
