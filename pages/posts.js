@@ -26,4 +26,5 @@ function postsPage(props = {}) {
 export default {
   page: postsPage,
   path: 'posts',
+  title: 'Posts',
 }
